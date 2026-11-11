@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sets in Python</title>
+
+    <link rel="stylesheet" href="https://pyscript.net/releases/2026.7.3/core.css" />
+    <script type="module" src="https://pyscript.net/releases/2026.7.3/core.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Young+Serif&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --wall: #16322A;
+            --wall-deep: #0F241E;
+            --card: #E8EDE6;
+            --ink: #1B2A24;
+            --ink-soft: #3C4E45;
+            --brass: #C49A3C;
+            --granted: #1F6B45;
+            --on-wall: #F1F4EE;
+            --on-wall-soft: #C9D6CC;
+
+            --serif: "Young Serif", Georgia, "Times New Roman", serif;
+            --typed: "Courier Prime", "Courier New", Courier, monospace;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 2rem 1.25rem;
+            color: var(--on-wall);
+            font-family: var(--typed);
+            /* wood-panelled wall: faint vertical seams */
+            background-color: var(--wall);
+            background-image: repeating-linear-gradient(
+                90deg,
+                transparent 0 119px,
+                rgba(0, 0, 0, 0.22) 119px 120px
+            );
+        }
+
+        .page {
+            width: 100%;
+            max-width: 62rem;
+            display: grid;
+            gap: 3.5rem;
+        }
+
+        .door {
+            display: grid;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        @media (min-width: 860px) {
+            .door {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
+                gap: 4.5rem;
+            }
+        }
+
+        /* ---------- left: the invitation ---------- */
+        .intro h1 {
+            margin: 0 0 1.25rem;
+            font-family: var(--serif);
+            font-weight: 400;
+            font-size: clamp(2.5rem, 7vw, 4.75rem);
+            line-height: 1.04;
+            letter-spacing: -0.01em;
+            color: var(--on-wall);
+            text-wrap: balance;
+        }
+
+        .intro p {
+            margin: 0;
+            max-width: 36ch;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--on-wall-soft);
+        }
+
+        /* ---------- right: the sign-in card ---------- */
+        .card {
+            position: relative;
+            padding: 1.75rem 1.75rem 1.5rem;
+            background: var(--card);
+            color: var(--ink);
+            border-top: 10px solid var(--brass);
+            border-radius: 3px;
+            box-shadow: 0 22px 34px -14px rgba(0, 0, 0, 0.6);
+            transform: rotate(-0.8deg);
+        }
+
+        @media (min-width: 860px) {
+            .card { transform: rotate(-1.5deg); }
+        }
+
+        .card h2 {
+            margin: 0 0 1.5rem;
+            font-family: var(--serif);
+            font-weight: 400;
+            font-size: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .card label {
+            display: block;
+            font-size: 1rem;
+            color: var(--ink-soft);
+        }
+
+        .card input[type="text"] {
+            display: block;
+            width: 100%;
+            margin: 0 0 1.4rem;
+            padding: 0.35rem 0.25rem 0.3rem;
+            font-family: var(--typed);
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--ink);
+            background: transparent;
+            border: 0;
+            border-bottom: 2px solid var(--ink);
+            border-radius: 0;
+        }
+
+        .card input[type="text"]:focus-visible {
+            outline: 3px solid var(--wall);
+            outline-offset: 3px;
+            background: rgba(196, 154, 60, 0.18);
+        }
+
+        .card button {
+            display: block;
+            width: 100%;
+            padding: 0.9rem 1rem;
+            font-family: var(--serif);
+            font-size: 1.15rem;
+            color: var(--on-wall);
+            background: var(--wall);
+            border: 0;
+            border-bottom: 4px solid var(--brass);
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        .card button:hover:not(:disabled) { background: var(--wall-deep); }
+        .card button:active:not(:disabled) { transform: translateY(2px); }
+        .card button:focus-visible {
+            outline: 3px solid var(--ink);
+            outline-offset: 3px;
+        }
+        .card button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .card .note {
+            margin: 1.1rem 0 0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--ink-soft);
+        }
+
+        /* ---------- below: the roll (py output lands in #output) ---------- */
+        #output {
+            min-height: 19rem;
+            padding: 1.75rem 1.75rem 2rem;
+            background: var(--card);
+            color: var(--ink);
+            border-top: 6px solid var(--brass);
+            border-radius: 3px;
+            box-shadow: 0 22px 34px -14px rgba(0, 0, 0, 0.6);
+            font-size: 1.05rem;
+            line-height: 1.5;
+        }
+
+        /* nothing signed yet: tell them what to do */
+        #output:empty {
+            display: grid;
+            place-items: center;
+            text-align: center;
+            background: rgba(232, 237, 230, 0.06);
+            color: var(--on-wall-soft);
+            box-shadow: none;
+            border: 2px dashed rgba(201, 214, 204, 0.35);
+        }
+
+        #output:empty::before {
+            content: "The roll is blank. Sign your name to see all four grades merged into one list.";
+            max-width: 34ch;
+        }
+
+        .roll-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .roll-head h2 {
+            margin: 0 0 0.3rem;
+            font-family: var(--serif);
+            font-weight: 400;
+            font-size: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .roll-head p {
+            margin: 0;
+            font-size: 0.95rem;
+            color: var(--ink-soft);
+        }
+
+        /* rubber stamp, same family as the door-list page */
+        .roll-total {
+            flex: 0 0 auto;
+            margin: 0;
+            padding: 0.35rem 0.8rem;
+            font-family: var(--serif);
+            font-size: 1.15rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            color: var(--granted);
+            border: 3px double currentColor;
+            border-radius: 3px;
+            transform: rotate(-6deg);
+            animation: stamp 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+        }
+
+        .roll-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+            column-gap: 2.5rem;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            border-top: 1px solid rgba(27, 42, 36, 0.22);
+        }
+
+        .roll-list li {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.6rem 0.4rem;
+            font-size: 1.1rem;
+            border-bottom: 1px solid rgba(27, 42, 36, 0.22);
+            overflow-wrap: anywhere;
+        }
+
+        /* the name you just signed */
+        .roll-list li.is-new {
+            font-weight: 700;
+            background: rgba(196, 154, 60, 0.28);
+            box-shadow: inset 4px 0 0 var(--brass);
+        }
+
+        .roll-list .you {
+            flex: 0 0 auto;
+            font-family: var(--serif);
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: var(--ink-soft);
+        }
+
+        @keyframes stamp {
+            from { transform: rotate(-16deg) scale(2.2); opacity: 0; }
+            to   { transform: rotate(-6deg)  scale(1);   opacity: 0.92; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .roll-total { animation: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- site nav (shared across the 4 pages) -->
+    <style>
+        body { padding-top: 5.5rem; }
+        .site-nav {
+            position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1000;
+            display: flex; gap: 2px; padding: 4px; max-width: calc(100% - 24px);
+            overflow-x: auto; scrollbar-width: none;
+            background: rgba(12, 14, 20, 0.55);
+            backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            font: 600 0.8125rem/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+        .site-nav::-webkit-scrollbar { display: none; }
+        .site-nav a {
+            flex: 0 0 auto; padding: 10px 14px; border-radius: 999px;
+            color: rgba(255, 255, 255, 0.72); text-decoration: none; white-space: nowrap;
+            transition: background 150ms ease, color 150ms ease, transform 100ms ease-out;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .site-nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+        .site-nav a:active { transform: scale(0.96); }
+        .site-nav a[aria-current="page"] { color: #0b0d12; background: #f1f4ee; }
+        .site-nav a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+        .site-nav .short { display: none; }
+        @media (max-width: 600px) {
+            .site-nav .long { display: none; }
+            .site-nav .short { display: inline; }
+            .site-nav a { padding: 10px 12px; }
+        }
+        @media (prefers-reduced-transparency: reduce) {
+            .site-nav { background: #0c0e14; backdrop-filter: none; -webkit-backdrop-filter: none; }
+        }
+    </style>
+    <nav class="site-nav" aria-label="Site">
+        <a href="index%202.html"><span class="long">Home</span><span class="short">Home</span></a>
+        <a href="index%203.html"><span class="long">Element Checker</span><span class="short">Elements</span></a>
+        <a href="index.html" aria-current="page"><span class="long">School Club Members</span><span class="short">Members</span></a>
+        <a href="project.html"><span class="long">Meet the Creator</span><span class="short">Creator</span></a>
+    </nav>
+
+    <main class="page">
+        <div class="door">
+            <section class="intro">
+                <h1>Add your name to the club roll.</h1>
+                <p>Grades 7 to 10 each keep their own list. Sign here and your name joins all four in one combined roll. A name that's already on it is never counted twice.</p>
+            </section>
+
+            <form class="card" id="club-form" autocomplete="off" onsubmit="return false">
+                <h2>The Presidents' Club</h2>
+
+                <label for="firstname">First name</label>
+                <input type="text" id="firstname">
+
+                <label for="lastname">Last name</label>
+                <input type="text" id="lastname">
+
+                <button type="button" id="sign-btn" py-click="makeahugeset" disabled>Add my name</button>
+
+                <p class="note">Be a great leader!</p>
+            </form>
+        </div>
+
+        <div id="output" aria-live="polite"></div>
+    </main>
+
+    <script type="py" src="./main.py"></script>
+
+    <script>
+        /*
+          Presentation only. main.py is untouched and still does all the set work:
+          it builds the union and calls display(...) into #output.
+          This script (1) keeps the button off until both names are typed,
+          (2) clears the old result before each click, since display() appends by default,
+          (3) restyles main.py's text output into the roll.
+        */
+        (function () {
+            var form   = document.getElementById('club-form');
+            var first  = document.getElementById('firstname');
+            var last   = document.getElementById('lastname');
+            var button = document.getElementById('sign-btn');
+            var output = document.getElementById('output');
+            var signed = '';
+
+            function syncButton() {
+                button.disabled = !(first.value.trim() && last.value.trim());
+            }
+            first.addEventListener('input', syncButton);
+            last.addEventListener('input', syncButton);
+            syncButton();
+
+            // Enter in either field signs the roll
+            form.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+                    e.preventDefault();
+                    if (!button.disabled) button.click();
+                }
+            });
+
+            // Capture phase: runs before PyScript's py-click handler
+            form.addEventListener('click', function (e) {
+                if (e.target.closest('#sign-btn')) {
+                    signed = first.value + ' ' + last.value;
+                    output.replaceChildren();
+                }
+            }, true);
+
+            function el(tag, className, text) {
+                var node = document.createElement(tag);
+                if (className) node.className = className;
+                if (text !== undefined) node.textContent = text;
+                return node;
+            }
+
+            function buildRoll(names, count) {
+                var wrap = el('div', 'roll');
+
+                var head = el('div', 'roll-head');
+                var titles = el('div');
+                titles.appendChild(el('h2', null, 'The full roll'));
+                titles.appendChild(el('p', null, 'Grades 7 to 10 and your signature, merged into one set. Listed A to Z.'));
+                head.appendChild(titles);
+                head.appendChild(el('p', 'roll-total', count + (count === 1 ? ' member' : ' members')));
+                wrap.appendChild(head);
+
+                var list = el('ul', 'roll-list');
+                names.slice().sort(function (a, b) { return a.localeCompare(b); }).forEach(function (name) {
+                    var li = el('li', name === signed ? 'is-new' : null);
+                    li.appendChild(el('span', null, name));
+                    if (name === signed) li.appendChild(el('span', 'you', 'you'));
+                    list.appendChild(li);
+                });
+                wrap.appendChild(list);
+                return wrap;
+            }
+
+            // main.py displays: "All Members: A, B, C Total Members: 3"
+            var pattern = /^All Members:\s*([\s\S]*?)\s*Total Members:\s*(\d+)\s*$/;
+
+            new MutationObserver(function () {
+                Array.prototype.slice.call(output.children).forEach(function (node) {
+                    if (node.classList.contains('roll')) return;
+                    var match = pattern.exec(node.textContent.trim());
+                    if (!match) return;
+                    var names = match[1].split(', ');
+                    var count = Number(match[2]);
+                    // if a typed comma broke the split, leave main.py's raw text alone
+                    if (names.length !== count) return;
+                    node.replaceWith(buildRoll(names, count));
+                });
+            }).observe(output, { childList: true });
+        })();
+    </script>
+</body>
+</html>

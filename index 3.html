@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Nonmetal Finder</title>
+
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+
+    <style>
+        :root {
+            --bg: #06080d;
+            --ink: #eef2f7;
+            --muted: #8a94a6;
+            --faint: rgba(255, 255, 255, 0.06);
+            --line: rgba(255, 255, 255, 0.10);
+            --glass: rgba(18, 22, 32, 0.62);
+            --accent: #5ef0c8;
+            --accent-2: #7aa8ff;
+            --radius: 22px;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body { margin: 0; min-height: 100%; }
+
+        body {
+            font: 100%/1.5 system-ui, -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(60rem 40rem at 15% -10%, rgba(94, 240, 200, 0.14), transparent 60%),
+                radial-gradient(50rem 36rem at 110% 20%, rgba(122, 168, 255, 0.14), transparent 60%),
+                var(--bg);
+            display: grid;
+            grid-template-columns: minmax(0, 560px);
+            justify-content: center;
+            align-content: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 48px 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* faint periodic-table grid behind everything */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image:
+                linear-gradient(var(--faint) 1px, transparent 1px),
+                linear-gradient(90deg, var(--faint) 1px, transparent 1px);
+            background-size: 56px 56px;
+            mask-image: radial-gradient(ellipse at 50% 30%, #000 20%, transparent 75%);
+            -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 20%, transparent 75%);
+            pointer-events: none;
+        }
+
+        .shell { width: 100%; max-width: 560px; }
+
+        /* ---------- header ---------- */
+        .eyebrow {
+            margin: 0 0 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(2.6rem, 9vw, 4.2rem);
+            line-height: 1.02;
+            letter-spacing: -0.035em;
+            font-weight: 700;
+            background: linear-gradient(180deg, #fff 30%, #9aa6b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .lede {
+            margin: 14px 0 32px;
+            max-width: 38ch;
+            color: var(--muted);
+            font-size: 1.0625rem;
+        }
+
+        /* ---------- glass card ---------- */
+        .card {
+            position: relative;
+            padding: 24px;
+            border-radius: var(--radius);
+            background: var(--glass);
+            border: 1px solid var(--line);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                0 30px 80px -20px rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            color: var(--muted);
+        }
+
+        .field { display: flex; gap: 10px; }
+
+        #symbol {
+            flex: 1;
+            min-width: 0;
+            height: 60px;
+            padding: 0 20px;
+            font: 600 1.6rem/1 ui-monospace, "SF Mono", Menlo, monospace;
+            letter-spacing: 0.02em;
+            color: var(--ink);
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            outline: none;
+            transition: border-color 150ms ease, box-shadow 150ms ease;
+        }
+        #symbol::placeholder { color: rgba(255, 255, 255, 0.22); }
+        #symbol:focus {
+            border-color: rgba(94, 240, 200, 0.6);
+            box-shadow: 0 0 0 4px rgba(94, 240, 200, 0.15);
+        }
+
+        #go {
+            height: 60px;
+            padding: 0 24px;
+            font: 600 1rem/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+            color: #04110c;
+            background: linear-gradient(135deg, var(--accent), #3fd3ff);
+            border: 0;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px -10px rgba(94, 240, 200, 0.6);
+            transition: transform 100ms ease-out, filter 150ms ease;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        #go:hover { filter: brightness(1.08); }
+        #go:active { transform: scale(0.96); }
+        #go:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+        .hint {
+            margin: 10px 2px 0;
+            font-size: 0.8125rem;
+            color: var(--muted);
+        }
+        kbd {
+            font: 600 0.75rem ui-monospace, Menlo, monospace;
+            padding: 2px 6px;
+            border-radius: 6px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--ink);
+        }
+
+        /* ---------- results (filled by main.py) ---------- */
+        #output {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            grid-auto-rows: minmax(56px, auto);
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+        #output:empty::before {
+            content: "Results appear here";
+            grid-column: 1 / -1;
+            display: grid;
+            place-items: center;
+            min-height: 188px;
+            border: 1px dashed var(--line);
+            border-radius: 16px;
+            color: rgba(255, 255, 255, 0.28);
+            font-size: 0.9375rem;
+        }
+
+        #output p {
+            margin: 0;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 0.9375rem;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            animation: rise 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+
+        /* "Symbol" becomes the big element tile on the left */
+        #output p:nth-child(1) {
+            grid-row: span 3;
+            justify-content: center;
+            text-align: center;
+            font: 700 1.5rem/1.2 ui-monospace, "SF Mono", Menlo, monospace;
+            letter-spacing: -0.01em;
+            color: #04110c;
+            background: linear-gradient(150deg, var(--accent), var(--accent-2));
+            border: 0;
+            box-shadow: 0 20px 50px -18px rgba(94, 240, 200, 0.55);
+        }
+        #output p:nth-child(2) { animation-delay: 50ms; font-weight: 650; }
+        #output p:nth-child(3) { animation-delay: 100ms; }
+        #output p:nth-child(4) { animation-delay: 150ms; }
+
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(8px) scale(0.98); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        /* ---------- quick-pick chips ---------- */
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid var(--line);
+        }
+        .chip {
+            min-width: 40px;
+            height: 34px;
+            padding: 0 10px;
+            font: 600 0.8125rem/1 ui-monospace, Menlo, monospace;
+            color: var(--ink);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 150ms ease, border-color 150ms ease, transform 100ms ease-out;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .chip:hover { background: rgba(94, 240, 200, 0.10); border-color: rgba(94, 240, 200, 0.4); }
+        .chip:active { transform: scale(0.94); }
+        .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        @media (max-width: 420px) {
+            .field { flex-direction: column; }
+            #symbol { flex: none; }
+            #output { grid-template-columns: 1fr; }
+            #output p:nth-child(1) { grid-row: auto; min-height: 96px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            #output p { animation: fade 200ms ease both; }
+            @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+            #go:active, .chip:active { transform: none; }
+        }
+
+        @media (prefers-reduced-transparency: reduce) {
+            .card { background: #121620; backdrop-filter: none; -webkit-backdrop-filter: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- site nav (shared across the 4 pages) -->
+    <style>
+        body { padding-top: 5.5rem; }
+        .site-nav {
+            position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1000;
+            display: flex; gap: 2px; padding: 4px; max-width: calc(100% - 24px);
+            overflow-x: auto; scrollbar-width: none;
+            background: rgba(12, 14, 20, 0.55);
+            backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            font: 600 0.8125rem/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+        .site-nav::-webkit-scrollbar { display: none; }
+        .site-nav a {
+            flex: 0 0 auto; padding: 10px 14px; border-radius: 999px;
+            color: rgba(255, 255, 255, 0.72); text-decoration: none; white-space: nowrap;
+            transition: background 150ms ease, color 150ms ease, transform 100ms ease-out;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .site-nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+        .site-nav a:active { transform: scale(0.96); }
+        .site-nav a[aria-current="page"] { color: #0b0d12; background: #f1f4ee; }
+        .site-nav a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+        .site-nav .short { display: none; }
+        @media (max-width: 600px) {
+            .site-nav .long { display: none; }
+            .site-nav .short { display: inline; }
+            .site-nav a { padding: 10px 12px; }
+        }
+        @media (prefers-reduced-transparency: reduce) {
+            .site-nav { background: #0c0e14; backdrop-filter: none; -webkit-backdrop-filter: none; }
+        }
+    </style>
+    <nav class="site-nav" aria-label="Site">
+        <a href="index%202.html"><span class="long">Home</span><span class="short">Home</span></a>
+        <a href="index%203.html" aria-current="page"><span class="long">Element Checker</span><span class="short">Elements</span></a>
+        <a href="index.html"><span class="long">School Club Members</span><span class="short">Members</span></a>
+        <a href="project.html"><span class="long">Meet the Creator</span><span class="short">Creator</span></a>
+    </nav>
+
+    <main class="shell">
+        <header>
+            <p class="eyebrow">Periodic Table · Nonmetals</p>
+            <h1>Nonmetal<br>Finder</h1>
+            <p class="lede">Type an element symbol to see its name, atomic number and atomic mass.</p>
+        </header>
+
+        <section class="card">
+            <label for="symbol">Symbol</label>
+            <div class="field">
+                <input type="text" id="symbol" placeholder="He" maxlength="3"
+                       autocomplete="off" autocapitalize="words" spellcheck="false">
+                <button id="go" type="button" py-click="find_the_element">Look up</button>
+            </div>
+            <p class="hint">Case matters: type <kbd>He</kbd>, not <kbd>HE</kbd>. Press <kbd>Enter</kbd> to search.</p>
+
+            <div id="output"></div>
+
+        
+        </section>
+
+        <footer>Powered by PyScript</footer>
+    </main>
+
+    <py-script src="main%203.py"></py-script>
+
+    <script>
+        // UI sugar only: Enter key and chips just press the same py-click button.
+        const input = document.getElementById('symbol');
+        const go = document.getElementById('go');
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go.click(); });
+        document.querySelectorAll('.chip').forEach((chip) => {
+            chip.addEventListener('click', () => { input.value = chip.textContent; go.click(); });
+        });
+    </script>
+</body>
+</html>
